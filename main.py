@@ -27,7 +27,7 @@ xmp = xmpfile.get_xmp()
 xmp.register_namespace(inspoURI, "INSPO")
 
 #set shirt property to UNIQLO
-xmp.set_property(inspoURI, u"shirt", u"UNIQLO")
+xmp.set_property(inspoURI, u"shirt", u"Uniqlo U T-Shirt")
 
 #if you can write new xmp, write it
 if xmpfile.can_put_xmp(xmp) == True:
