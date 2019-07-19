@@ -53,9 +53,12 @@ for post in streetwear.hot():
 
 
             if len(comments) > 0:
+
+                #prints the posts link and the posts' photos' link
                 print("Post URL: https://www.reddit.com/" + post.permalink)
                 print("Photo URL: " + post.url)
 
+                #prints all possible clothes comments on post
                 for comment in comments:
                     print(comment)
 
