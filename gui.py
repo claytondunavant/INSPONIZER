@@ -1,14 +1,29 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import Qt
 import sys
 import xmp_api
+from requests import get
+from ast import literal_eval
+from os import remove, rename
 
 class Reddit_to_INSPO(QWidget):
 
     def __init__(self):
         super().__init__()
+
+        #widgets
+        self.text_edit = QPlainTextEdit()
+        self.photo_container = QLabel()
+
+        #variables
+        self.current_file_path = ''
+        self.current_photo_path = ''
+        self.current_photo_name = ''
         self.articles_and_names = {}
+
+        #functions
         self.initUI()
 
     def initUI(self):
@@ -20,19 +35,12 @@ class Reddit_to_INSPO(QWidget):
         grid.setSpacing(10)  # make 10px spacing in grid
 
         #INSPO COMMENT
-        text_edit = QPlainTextEdit()  # add text editor
-        text_edit.setReadOnly(True)  # make it read-only
-        text_edit.setPlainText("ava is really hecking cute")  # set text
-
-        # corrdinates are (y, x)
-        grid.addWidget(text_edit, 0, 1, max_rows, 1)
+        self.text_edit.setReadOnly(True)  # make it read-only
+        self.text_edit.setPlainText("")  # set text
+        grid.addWidget(self.text_edit, 0, 1, max_rows, 1)
 
         #INSPO PICTURE
-        label = QLabel()  # set up label
-        pixmap = QPixmap('examples/dope.png')  # set up pixmap
-        label.setPixmap(pixmap)  # set pixmap on label
-
-        grid.addWidget(label, 0, 2, max_rows, 1)
+        grid.addWidget(self.photo_container, 0, 2, max_rows, 1)
 
 
         # FILL IN INSPO INFO
@@ -43,7 +51,7 @@ class Reddit_to_INSPO(QWidget):
                 self.name = name #save the articles name
                 self.label.setText(self.name) #set the label as the articles name
 
-                self.line_edit.textChanged.connect(lambda text: ex.print_inspo_data(text, self.name)) #whenever edited send the new text and name of article
+                self.line_edit.textChanged.connect(lambda text: ex.inspo_data_to_dict(text, self.name)) #whenever edited send the new text and name of article
 
         row = 0
         inspo_article_forms = []
@@ -63,10 +71,14 @@ class Reddit_to_INSPO(QWidget):
         #write button
         write_button = QPushButton()
         write_button.setText("Write INSPO Data")
-
         write_button.clicked.connect(self.write_inspo)
-
         grid.addWidget(write_button, row, 3)
+
+        #temp open button
+        open_button = QPushButton()
+        open_button.setText("Open file")
+        open_button.clicked.connect(lambda: self.open_file("reddit_parsing/cg6h3j"))
+        grid.addWidget(open_button, row + 1, 3)
 
         #final steps
         self.setLayout(grid) #set up layout
@@ -74,15 +86,58 @@ class Reddit_to_INSPO(QWidget):
 
     @pyqtSlot()
     def write_inspo(self):
-        xmp_api.dictonary_write('examples/dope.png', self.articles_and_names)
+        xmp_api.dictonary_write(self.current_photo_path, self.articles_and_names)
+        rename(self.current_photo_path, "examples/" + self.current_photo_name)
 
-    def print_inspo_data(self, text, article):
+        remove(self.current_file_path)
+        self.current_file_path = ''
+        self.current_photo_path = ''
+        self.current_photo_name = ''
+        self.articles_and_names = {}
+
+
+    def inspo_data_to_dict(self, text, article):
         if text == "":
             self.articles_and_names.pop(article, None)
         else:
             self.articles_and_names[article] = text
 
-        print(self.articles_and_names)
+    def open_file(self, file):
+        self.current_file_path = file
+
+        # get info dict from file
+        info_dict = {}
+        with open(file, "r") as f:
+            info_dict = literal_eval(f.readline())
+
+        #get comments from file
+        comments = ""
+        with open(file, 'r') as f:
+            f.readline() #skip first line
+            comments = f.read() #read the rest
+
+        #place comments in their box
+        self.text_edit.setPlainText(comments)
+
+        #download a photo into .temp
+        photo_url = info_dict["photoURL"]
+
+        #find the file extension
+        extension = ''
+        for i in range(len(photo_url) - 1, -1,  -1): #loop backwards
+            extension = extension + photo_url[i]
+            if photo_url[i] == '.':
+                extension = extension[::-1] #make it backwards
+                break
+
+        #download photo
+        r = get(photo_url)
+        self.current_photo_name = info_dict["id"] + extension
+        self.current_photo_path = '.temp/' + info_dict["id"] + extension
+        open(self.current_photo_path, 'wb').write(r.content)
+
+
+        self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(self.width() / 2, self.height() / 2, Qt.KeepAspectRatio, Qt.FastTransformation))
 
 
 if __name__ == "__main__":
