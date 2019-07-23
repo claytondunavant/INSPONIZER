@@ -1,8 +1,8 @@
-import praw
+from praw import Reddit
 
-def print_hot_wdyt():
+def get_hot_wdyt():
     #starts instance of reddit using bot
-    r = praw.Reddit('INSPONIZER_bot')
+    r = Reddit('INSPONIZER_bot')
 
     #opens up streetwear subreddit
     streetwear = r.subreddit("streetwear")
@@ -22,45 +22,66 @@ def print_hot_wdyt():
             #if post is a wdywt post
             if "[wdywt]" in title.lower():
 
-                #removes "more comments"
-                post.comments.replace_more(limit=None)
+                id = post.id
 
-                #scrapped comments thought to contain clothes
-                comments = []
+                if id not in open("reddit_parsing/_scrapped_posts").read(): #if post has not already been scraped
 
-                #switch for if the most likely comment is found
-                comment_found = False
+                    #removes "more comments"
+                    post.comments.replace_more(limit=None)
 
-                #for all shown comments
-                for comment in post.comments.list():
+                    #scrapped comments thought to contain clothes
+                    comments = []
 
-                    if comment_found == False:
+                    #switch for if the most likely comment is found
+                    comment_found = False
 
-                        #if the comment is also by op
-                        if comment.author == author:
+                    #for all shown comments
+                    for comment in post.comments.list():
 
-                            #the text of the comment
-                            text = comment.body
+                        if comment_found == False:
 
-                            #if the comment is longer than 30 characters
-                            if len(text) > 30:
-                                comments.append(text)
+                            #if the comment is also by op
+                            if comment.author == author:
 
-                                #if the text has a : or - in it, often used in clothes formating
-                                if ":" in text or "-" in text:
-                                    del comments[:] #delete all other comments
-                                    comments.append(text) #add comment to comments
-                                    comment_found = True #indicate the most likely comment is found
+                                #the text of the comment
+                                text = comment.body
+
+                                #if the comment is longer than 30 characters
+                                if len(text) > 30:
+                                    comments.append(text)
+
+                                    #if the text has a : or - in it, often used in clothes formating
+                                    if ":" in text or "-" in text:
+                                        del comments[:] #delete all other comments
+                                        comments.append(text) #add comment to comments
+                                        comment_found = True #indicate the most likely comment is found
 
 
-                if len(comments) > 0:
+                    if len(comments) > 0:
 
-                    #prints the posts link and the posts' photos' link
-                    print("Post URL: https://www.reddit.com/" + post.permalink)
-                    print("Photo URL: " + post.url)
+                        #add file to _scrapped_posts
+                        f = open("reddit_parsing/_scrapped_posts", "a")
+                        f.write(id + " ")
+                        f.close()
 
-                    #prints all possible clothes comments on post
-                    for comment in comments:
-                        print(comment)
+                        #generate info dictionary
+                        info = {}
+                        info['id'] = id
+                        info["author"] = "https://www.reddit.com/user/" + author.name
+                        info["url"] = "https://www.reddit.com/" + post.permalink
+                        info["photoURL"] = post.url
 
-                    print("------------------------------------------\n")
+                        #make new file
+                        f_name = "reddit_parsing/" + id
+                        f = open(f_name, "x")
+                        f = open(f_name, "w")
+                        f.write(str(info)) #write info dict onto new file
+
+                        #prints all possible clothes comments on post
+                        for comment in comments:
+                            f.write("\n")
+                            f.write(comment)
+
+                        f.close()
+
+get_hot_wdyt()
