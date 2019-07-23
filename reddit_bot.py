@@ -64,5 +64,3 @@ def print_hot_wdyt():
                         print(comment)
 
                     print("------------------------------------------\n")
-
-

@@ -11,7 +11,7 @@ from libxmp import XMPFiles
 #static variables
 INSPO_URI = "https://www.claytondunavant.com/inspo" #insponizer URI
 #all possible articles of clothing
-ARTICLES = ["hat","glasses","jacket","top","bag","belt","bottom","socks","shoes"]
+ARTICLES = ["hat","glasses","jacket","top","bag","watch","belt","bottom","socks","shoes"]
 
 
 
@@ -64,6 +64,41 @@ def check_xmp_writable(file):
         xmpfile.close_file()
         return False
 
+#write INSPO data from dictonary
+def dictonary_write(file, dict):
+    # get xmp from file
+    xmpfile = XMPFiles(file_path=file, open_forupdate=True)
+    xmp = xmpfile.get_xmp()
+
+    if check_xmp_writable(file) == True: #if xmp can be written to file
+
+        if check_inspo_xmp(file) == False: #if INSPO xmp does not exist
+
+            # register or update INSPO namespace URI
+            xmp.register_namespace(INSPO_URI, "INSPO")
+
+            # for each possible article
+            for article in ARTICLES:
+                print("trying for " + article)
+                try:
+                    value = dict[article]
+                    xmp.set_property(INSPO_URI, article, value)
+                except:
+                    pass
+
+            xmpfile.put_xmp(xmp)
+            xmpfile.close_file()
+
+        else:
+            xmpfile.close_file()
+            print("INSPO DATA ALREADY EXISTS")
+            return
+
+    else:
+        xmpfile.close_file()
+        print("XMP NOT WRITEABLE")
+        return
+
 #manually write INSPO data in terminal
 def terminal_write(file):
     # get xmp from file
@@ -88,6 +123,7 @@ def terminal_write(file):
                     xmp.set_property(INSPO_URI, article, value)
 
             xmpfile.put_xmp(xmp)
+            xmpfile.close_file()
 
         else:
             xmpfile.close_file()
@@ -99,3 +135,15 @@ def terminal_write(file):
         print("XMP NOT WRITEABLE")
         return
 
+
+'''
+  ____ _____ _   _ _____ ____      _    _     
+ / ___| ____| \ | | ____|  _ \    / \  | |    
+| |  _|  _| |  \| |  _| | |_) |  / _ \ | |    
+| |_| | |___| |\  | |___|  _ <  / ___ \| |___ 
+ \____|_____|_| \_|_____|_| \_\/_/   \_\_____|
+
+'''
+
+def get_ARTICLES():
+    return ARTICLES
