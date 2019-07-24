@@ -115,19 +115,19 @@ class Reddit_to_INSPO(QWidget):
         write_button = QPushButton()
         write_button.setText("Write INSPO Data")
         write_button.clicked.connect(self.write_inspo)
-        self.grid.addWidget(write_button, inspo_rows + 1, 2, 4, 2)
+        self.grid.addWidget(write_button, inspo_rows + 1, 2, 1, 2)
 
         # temp open button
         open_button = QPushButton()
         open_button.setText("Open file")
         open_button.clicked.connect(lambda: self.open_file(""))
-        self.grid.addWidget(open_button, inspo_rows + 1, 4, 4, 2)
+        self.grid.addWidget(open_button, inspo_rows + 1, 4, 1, 2)
 
         # delete button
         delete_button = QPushButton()
         delete_button.setText("Delete File")
-        delete_button.clicked.connect(self.reset)
-        self.grid.addWidget(delete_button, inspo_rows + 1, 6, 4, 2)
+        delete_button.clicked.connect(lambda: self.reset(delete=True))
+        self.grid.addWidget(delete_button, inspo_rows + 1, 6, 1, 2)
 
 
 
@@ -142,17 +142,17 @@ class Reddit_to_INSPO(QWidget):
 
     @pyqtSlot()
     def write_inspo(self):
-        try:
-            xmp_api.dictonary_write(self.current_photo_path, self.articles_and_names) #write info
-            rename(self.current_photo_path, self.output_folder + self.current_photo_name) #change file location
+        #try:
+        xmp_api.dictonary_write(self.current_photo_path, self.articles_and_names) #write info
+        rename(self.current_photo_path, self.output_folder + self.current_photo_name) #change file location
 
-            QMessageBox.about(self, "Write Complete", "Your INSPO info has been written to the image and saved") #notify user
+        QMessageBox.about(self, "Write Complete", "Your INSPO info has been written to the image and saved") #notify user
 
-            self.reset() #reset
+        self.reset(delete=True) #reset
 
-        except Exception as e:
+        '''except Exception as e:
             QMessageBox.about(self, "Error", "Your inspo info did not write: " + str(e))
-            pass
+            pass'''
 
 
     def inspo_data_to_dict(self, text, article): #constantly updates information placed into the form boxes
@@ -160,6 +160,8 @@ class Reddit_to_INSPO(QWidget):
             self.articles_and_names.pop(article, None)
         else:
             self.articles_and_names[article] = text
+
+
 
     def open_file(self, file, auto=False):
 
@@ -211,18 +213,23 @@ class Reddit_to_INSPO(QWidget):
             self.articles_and_names['author'] = info_dict['author']
 
 
-            self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(800, 800, Qt.KeepAspectRatio, Qt.FastTransformation))
+            self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(700, 700, Qt.KeepAspectRatio, Qt.FastTransformation))
 
         except Exception as e:
             QMessageBox.about(self, "Error", "cannot open file: " + str(e))
 
-    def reset(self):
 
-        try:
-            remove('.temp/*')  # remove all temp files
-            remove(self.current_file_path) #remove reddit file
-        except:
-            pass
+
+    def reset(self, delete=False):
+
+        if delete == True: #if files are to be deleted
+            try:
+                remove(self.current_file_path) #remove reddit file
+                temp_files = listdir(".temp/")
+                for file in temp_files:
+                    remove('.temp/' + file)  # remove all temp files
+            except:
+                pass
 
         #reset variables
         self.current_file_path = ''
@@ -239,9 +246,10 @@ class Reddit_to_INSPO(QWidget):
         self.automode()
 
     def automode(self):
-        file = self.files_to_parse[self.file_index]
-        self.open_file('reddit_parsing/' + file, auto=True)
-        self.file_index = self.file_index + 1
+        if len(self.files_to_parse) > 0:
+            file = self.files_to_parse[self.file_index]
+            self.open_file('reddit_parsing/' + file, auto=True)
+            self.file_index = self.file_index + 1
 
 
 if __name__ == "__main__":

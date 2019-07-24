@@ -11,7 +11,7 @@ from libxmp import XMPFiles
 #static variables
 INSPO_URI = "https://www.claytondunavant.com/inspo" #insponizer URI
 #all possible articles of clothing
-ARTICLES = ["id", "url", "author","hat","glasses","jacket", "one piece", "top", "undershirt","bag","jewelry","belt","bottom","socks","shoes"]
+ARTICLES = ["id", "url", "author","instagram","hat","glasses","jacket", "top", "undershirt", "one piece", "bag","watch","jewelry","belt","bottom","socks","shoes"]
 
 
 
@@ -27,17 +27,21 @@ ARTICLES = ["id", "url", "author","hat","glasses","jacket", "one piece", "top", 
 def check_inspo_xmp(file):
 
     #get xmp from file
-    xmpfile = XMPFiles(file_path=file)
+    xmpfile = XMPFiles(file_path=file, open_forupdate=True)
     xmp = xmpfile.get_xmp()
 
     #check to see
-    try:
-        xmp.get_prefix_for_namespace(INSPO_URI)
+    if xmp.does_property_exist(INSPO_URI, 'id') == True:
         xmpfile.close_file()
         return True
-    except:
+    else:
         xmpfile.close_file()
         return False
+
+
+
+
+
 
 
 
@@ -56,13 +60,16 @@ def check_xmp_writable(file):
     xmpfile = XMPFiles(file_path=file, open_forupdate=True)
     xmp = xmpfile.get_xmp()
 
-    #if you can write new xmp
-    if xmpfile.can_put_xmp(xmp) == True:
-        xmpfile.close_file()
-        return True
-    else:
-        xmpfile.close_file()
-        return False
+    try:
+        #if you can write new xmp
+        if xmpfile.can_put_xmp(xmp) == True:
+            xmpfile.close_file()
+            return True
+        else:
+            xmpfile.close_file()
+            return False
+    except Exception as e:
+        print("Error: " + str(e))
 
 #write INSPO data from dictonary
 def dictonary_write(file, dict):
@@ -87,6 +94,7 @@ def dictonary_write(file, dict):
 
             xmpfile.put_xmp(xmp)
             xmpfile.close_file()
+            return
 
         else:
             xmpfile.close_file()
