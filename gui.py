@@ -77,12 +77,15 @@ class Reddit_to_INSPO(QWidget):
         #temp open button
         open_button = QPushButton()
         open_button.setText("Open file")
-        open_button.clicked.connect(lambda: self.open_file("reddit_parsing/cg6h3j"))
-        grid.addWidget(open_button, row + 1, 3)
+        open_button.clicked.connect(self.open_file)
+        grid.addWidget(open_button, row, 4)
 
         #final steps
         self.setLayout(grid) #set up layout
         self.show() #show window
+
+
+
 
     @pyqtSlot()
     def write_inspo(self):
@@ -102,7 +105,9 @@ class Reddit_to_INSPO(QWidget):
         else:
             self.articles_and_names[article] = text
 
-    def open_file(self, file):
+    def open_file(self):
+        file = QFileDialog.getOpenFileName(self, "Open File", 'reddit_parsing/')[0]
+
         self.current_file_path = file
 
         # get info dict from file
@@ -135,6 +140,11 @@ class Reddit_to_INSPO(QWidget):
         self.current_photo_name = info_dict["id"] + extension
         self.current_photo_path = '.temp/' + info_dict["id"] + extension
         open(self.current_photo_path, 'wb').write(r.content)
+
+        #add info_dict to dict to write to photo
+        self.articles_and_names['id'] = info_dict['id']
+        self.articles_and_names['url'] = info_dict['url']
+        self.articles_and_names['author'] = info_dict['author']
 
 
         self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(self.width() / 2, self.height() / 2, Qt.KeepAspectRatio, Qt.FastTransformation))

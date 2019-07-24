@@ -11,7 +11,7 @@ from libxmp import XMPFiles
 #static variables
 INSPO_URI = "https://www.claytondunavant.com/inspo" #insponizer URI
 #all possible articles of clothing
-ARTICLES = ["hat","glasses","jacket","top","bag","watch","belt","bottom","socks","shoes"]
+ARTICLES = ["id", "url", "author","hat","glasses","jacket", "top", "undershirt","bag","jewelry","belt","bottom","socks","shoes"]
 
 
 
@@ -79,7 +79,6 @@ def dictonary_write(file, dict):
 
             # for each possible article
             for article in ARTICLES:
-                print("trying for " + article)
                 try:
                     value = dict[article]
                     xmp.set_property(INSPO_URI, article, value)
