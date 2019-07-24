@@ -11,7 +11,7 @@ from libxmp import XMPFiles
 #static variables
 INSPO_URI = "https://www.claytondunavant.com/inspo" #insponizer URI
 #all possible articles of clothing
-ARTICLES = ["id", "url", "author","hat","glasses","jacket", "top", "undershirt","bag","jewelry","belt","bottom","socks","shoes"]
+ARTICLES = ["id", "url", "author","hat","glasses","jacket", "one piece", "top", "undershirt","bag","jewelry","belt","bottom","socks","shoes"]
 
 
 
