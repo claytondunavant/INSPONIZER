@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QLabel, QGridLayout, QGroupBox, QVBoxLayout, QScrollArea, QLineEdit, QPushButton, QMessageBox, QFileDialog, QApplication
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import pyqtSlot, Qt
 from requests import get
 from ast import literal_eval
