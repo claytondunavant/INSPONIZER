@@ -1,23 +1,26 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtCore import Qt
-import sys
-import xmp_api
+from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QLabel, QGridLayout, QGroupBox, QVBoxLayout, QScrollArea, QLineEdit, QPushButton, QMessageBox, QFileDialog, QApplication
+from PyQt5.QtCore import pyqtSlot, Qt
 from requests import get
 from ast import literal_eval
 from os import remove, rename, listdir
+import sys
+import xmp_api
 
-class Reddit_to_INSPO(QWidget):
+
+class RedditINSPOParser(QWidget):
+    '''displays the comments and photos scrapped from reddit by reddit_bot and allows for the manual embedding of INSPO data
+    into said photos'''
 
     '''
-     __     ___    ____  ___    _    ____  _     _____ ____
-     \ \   / / \  |  _ \|_ _|  / \  | __ )| |   | ____/ ___|
-      \ \ / / _ \ | |_) || |  / _ \ |  _ \| |   |  _| \___ \
-       \ V / ___ \|  _ < | | / ___ \| |_) | |___| |___ ___) |
-        \_/_/   \_\_| \_\___/_/   \_\____/|_____|_____|____/
+     ___ _   _ ___ _____ 
+    |_ _| \ | |_ _|_   _|
+     | ||  \| || |  | |  
+     | || |\  || |  | |  
+    |___|_| \_|___| |_|  
+
     '''
 
+    #initialization function: runs everytime the class is called
     def __init__(self):
         super().__init__()
 
@@ -26,12 +29,7 @@ class Reddit_to_INSPO(QWidget):
         self.photo_container = QLabel()
 
         #design variables
-        self.title = "Reddit INSPONIZER Parser"
-        self.left = 10
-        self.top = 10
-        self.width = 1000
-        self.height = 600
-
+        self.title = "Reddit INSPO Parser"
 
         #fuction variables
         self.output_folder = "inspos/reddit/"
@@ -43,12 +41,11 @@ class Reddit_to_INSPO(QWidget):
         #get list of files to parse
         self.files_to_parse = listdir("reddit_parsing")
         self.files_to_parse.remove("_scrapped_posts")
-        self.file_index = 0
 
         #functions
-        self.initUI()
+        self.initUI() #initilialize user interface
+        self.automode() #automatically check to see if there are new scrapped reddit posts to parse
 
-        self.automode()
 
     '''
       ____ ____      _    ____  _   _ ___ ____ ____  
@@ -59,75 +56,112 @@ class Reddit_to_INSPO(QWidget):
 
     def initUI(self):
         #set up grid
-        self.generate_grid()
+        self.ui_window()
 
         # set up window
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
 
         #final steps
         self.setLayout(self.grid)
         self.show() #show window
 
 
-    def generate_grid(self):
-        ARTICLES = xmp_api.get_ARTICLES()  # get all possible articles
-        inspo_rows = (len(ARTICLES) * 2) + 1  #rows taken up by inspo forms
+    def ui_window(self):
+        #variables
+        self.ARTICLES = xmp_api.get_ARTICLES()  # get all possible articles
+        self.inspo_rows = (len(self.ARTICLES) * 2) + 1  #rows taken up by inspo forms
 
+        #make grid that organizes the widgets
         self.grid = QGridLayout()
-        self.grid.setSpacing(10)  # make 10px spacing in grid
+        self.grid.setSpacing(10) #make 10px spacing in grid
 
-        # INSPO COMMENT
+        #make the text box to hold the comment information
+        self.ui_comment_textbox()
+
+        #make the area to hold the photo from the reddit post
+        self.ui_fit_photo()
+
+        #make the forms to place INSPO information from comments into
+        self.ui_inspo_info_forms()
+
+        #make the bottom buttons to write, open, and delete saved reddit posts
+        self.ui_bottom_buttons()
+
+    def ui_comment_textbox(self):
+        #make the text box to hold the comment information
         self.text_edit.setReadOnly(True)  # make it read-only
         self.text_edit.setPlainText("")  # set text
-        self.grid.addWidget(self.text_edit, 0, 0, inspo_rows, 3)
+        self.grid.addWidget(self.text_edit, 0, 0, self.inspo_rows, 3)
 
-        # INSPO PICTURE
-        self.grid.addWidget(self.photo_container, 0, 3, inspo_rows, 4)
+    def ui_fit_photo(self):
+        #make the area to hold the photo from the reddit post
+        self.grid.addWidget(self.photo_container, 0, 3, self.inspo_rows, 4)
 
-        # FILL IN INSPO INFO
-        class inspo_article_form:  # create a new class for each article fill in the blank section
+    def ui_inspo_info_forms(self):
+        #make the forms to place INSPO information from comments into
+        inspo_form_box = QGroupBox()  # make group box for inspo forms
+        form_layout = QVBoxLayout()
+        inspo_form_box.setLayout(form_layout)  # make the group box have a vertical layout
+
+        form_scroll = QScrollArea()  # create scroll area
+        form_layout.addWidget(form_scroll)  # add scroll area to box
+        form_scroll.setWidgetResizable(True)
+        form_scroll_content = QWidget(form_scroll)  # make a widget to hold the scroll area content
+
+        form_scroll_layout = QVBoxLayout(form_scroll_content)
+        form_scroll_content.setLayout(form_scroll_layout) #give a layout to the content
+
+        '''class for each possible article of clothing
+        This is done so there is a stored article name with each unique text box'''
+        class inspo_article_form:
             def __init__(self, name):
                 self.label = QLabel()  # init the label
                 self.line_edit = QLineEdit()  # init the form
                 self.name = name  # save the articles name
                 self.label.setText(self.name)  # set the label as the articles name
 
-                self.line_edit.textChanged.connect(lambda text: ex.inspo_data_to_dict(text,self.name))  # whenever edited send the new text and name of article
+                self.line_edit.textChanged.connect(lambda text: ex.inspo_data_to_dict(text,
+                                                                                      self.name))  # whenever edited send the new text and name of article
 
-        row = 0
-        self.inspo_article_forms = []
+        row = 0 #current row
+        self.inspo_article_forms = [] #store all the inspo_article_form objects in a list
 
-        for article in ARTICLES:  # for each article set a label and fill in the box
-            if article != "author" and article != "id" and article != "url":
+        for article in self.ARTICLES:  # for each article set a label and fill in the box
+            if article != "author" and article != "id" and article != "url": #if it is not a default article
                 form = inspo_article_form(article)  # make new inspo article form
 
                 # add article form
-                self.grid.addWidget(form.label, row, 7, 1, 3)
-                row = row + 1
+                form_scroll_layout.addWidget(form.label) #title
+                row = row + 1 #go down a row
 
-                self.grid.addWidget(form.line_edit, row, 7, 1, 3)
-                row = row + 1
+                form_scroll_layout.addWidget(form.line_edit) #text box
+                row = row + 1 #go down a row
 
-                self.inspo_article_forms.append(form)  # add inspo_article_form to list
+                self.inspo_article_forms.append(form) # add inspo_article_form to list'
 
+        form_scroll.setWidget(form_scroll_content) #add the content to the scroll area
+
+        self.grid.addWidget(inspo_form_box, 0, 7, self.inspo_rows, 3)
+
+    def ui_bottom_buttons(self):
         # write button
         write_button = QPushButton()
         write_button.setText("Write INSPO Data")
-        write_button.clicked.connect(self.write_inspo)
-        self.grid.addWidget(write_button, inspo_rows + 1, 2, 1, 2)
+        write_button.clicked.connect(self.write_inspo) #when clicked write the inspo data and save the image
+        self.grid.addWidget(write_button, self.inspo_rows + 1, 2, 1, 2)
 
         # temp open button
         open_button = QPushButton()
         open_button.setText("Open file")
-        open_button.clicked.connect(lambda: self.open_file(""))
-        self.grid.addWidget(open_button, inspo_rows + 1, 4, 1, 2)
+        open_button.clicked.connect(lambda: self.open_file("")) #when clicked open the browser
+        self.grid.addWidget(open_button, self.inspo_rows + 1, 4, 1, 2)
 
         # delete button
         delete_button = QPushButton()
         delete_button.setText("Delete File")
-        delete_button.clicked.connect(lambda: self.reset(delete=True))
-        self.grid.addWidget(delete_button, inspo_rows + 1, 6, 1, 2)
+        delete_button.clicked.connect(lambda: self.reset(delete=True)) #when clicked reset the program and delete the current photo and file
+        self.grid.addWidget(delete_button, self.inspo_rows + 1, 6, 1, 2)
+
 
 
 
@@ -149,10 +183,6 @@ class Reddit_to_INSPO(QWidget):
         QMessageBox.about(self, "Write Complete", "Your INSPO info has been written to the image and saved") #notify user
 
         self.reset(delete=True) #reset
-
-        '''except Exception as e:
-            QMessageBox.about(self, "Error", "Your inspo info did not write: " + str(e))
-            pass'''
 
 
     def inspo_data_to_dict(self, text, article): #constantly updates information placed into the form boxes
@@ -213,7 +243,7 @@ class Reddit_to_INSPO(QWidget):
             self.articles_and_names['author'] = info_dict['author']
 
 
-            self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(700, 700, Qt.KeepAspectRatio, Qt.FastTransformation))
+            self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(600, 600, Qt.KeepAspectRatio, Qt.FastTransformation))
 
         except Exception as e:
             QMessageBox.about(self, "Error", "cannot open file: " + str(e))
@@ -246,17 +276,17 @@ class Reddit_to_INSPO(QWidget):
         self.automode()
 
     def automode(self):
-        if len(self.files_to_parse) > 0:
-            file = self.files_to_parse[self.file_index]
-            self.open_file('reddit_parsing/' + file, auto=True)
-            self.file_index = self.file_index + 1
+        if len(self.files_to_parse) > 0: #if there are files to parse
+            file = self.files_to_parse[0]
+            self.open_file('reddit_parsing/' + file, auto=True) #open file in auto mode
+            self.files_to_parse.remove(file) #remove file form files to parse
 
 
 if __name__ == "__main__":
     # every application must have a QApplication to build on
-    app = QApplication(sys.argv)  # brackets are commandline arguements to bring along
+    app = QApplication(sys.argv) #QApplication runs with system arguements
     app.setStyleSheet("QPushButton { margin: 10ex; }")  # can add css-like style sheets to program
-    ex = Reddit_to_INSPO()
+    ex = RedditINSPOParser() #start Reddit INSPO Parser
     sys.exit(app.exec_())
 
 
