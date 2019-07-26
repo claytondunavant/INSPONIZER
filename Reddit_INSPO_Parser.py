@@ -29,6 +29,7 @@ class RedditINSPOParser(QWidget):
         #widgets
         self.text_edit = QPlainTextEdit()
         self.photo_container = QLabel()
+        self.file_countdown = QLabel() #a countdown for how many files left to parse in automode
 
         #design variables
         self.title = "Reddit INSPO Parser"
@@ -88,6 +89,9 @@ class RedditINSPOParser(QWidget):
 
         #make the bottom buttons to write, open, and delete saved reddit posts
         self.ui_bottom_buttons()
+
+        #make indicator of how many for files there are to parse
+        self.ui_file_countdown()
 
     def ui_comment_textbox(self):
         #make the text box to hold the comment information
@@ -163,6 +167,10 @@ class RedditINSPOParser(QWidget):
         delete_button.setText("Delete File")
         delete_button.clicked.connect(lambda: self.reset(delete=True)) #when clicked reset the program and delete the current photo and file
         self.grid.addWidget(delete_button, self.inspo_rows + 1, 6, 1, 2)
+
+    def ui_file_countdown(self):
+        self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse - 1)))
+        self.grid.addWidget(self.file_countdown, self.inspo_rows, 0)
 
 
 
@@ -273,7 +281,8 @@ class RedditINSPOParser(QWidget):
             form.line_edit.setText("")
 
         self.text_edit.setPlainText("")
-        #self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(800, 800, Qt.KeepAspectRatio, Qt.FastTransformation))
+        self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse) - 1))
+        self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(800, 800, Qt.KeepAspectRatio, Qt.FastTransformation))
 
         self.automode()
 
@@ -292,7 +301,7 @@ if __name__ == "__main__":
     sys.exit(app.exec_())
 
 
-def get_hot_wdyt():
+def get_hot_wdywt():
     #starts instance of reddit using bot
     r = Reddit('INSPONIZER_bot')
 
