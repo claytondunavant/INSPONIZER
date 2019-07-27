@@ -386,7 +386,7 @@ def get_hot_wdywt(gui=False):
                         info["photoURL"] = post.url
 
                         #make new file
-                        f_name = "reddit_parsing/" + id
+                        f_name = ".posts_to_parse/" + id
                         f = open(f_name, "x")
                         f = open(f_name, "w")
                         f.write(str(info)) #write info dict onto new file
