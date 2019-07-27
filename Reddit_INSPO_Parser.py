@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QLabel, QGridLayout, QGroupBox, QVBoxLayout, QScrollArea, QLineEdit, QPushButton, QMessageBox, QFileDialog, QApplication
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QLabel, QGridLayout, QGroupBox, QVBoxLayout, QScrollArea, QLineEdit, QPushButton, QMessageBox, QFileDialog, QApplication, QShortcut
+from PyQt5.QtGui import QPixmap, QKeySequence
 from PyQt5.QtCore import pyqtSlot, Qt
 from requests import get
 from ast import literal_eval
@@ -42,10 +42,12 @@ class RedditINSPOParser(QWidget):
         self.articles_and_names = {}
 
         #get list of files to parse
-        self.files_to_parse = listdir("reddit_parsing")
+        self.files_to_parse = listdir(".posts_to_parse")
         self.files_to_parse.remove("_scrapped_posts")
+        self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse) - 1))
 
         #functions
+        self.init_shortcuts() #make keyboard shortcuts
         self.initUI() #initilialize user interface
         self.automode() #automatically check to see if there are new scrapped reddit posts to parse
 
@@ -168,8 +170,14 @@ class RedditINSPOParser(QWidget):
         delete_button.clicked.connect(lambda: self.reset(delete=True)) #when clicked reset the program and delete the current photo and file
         self.grid.addWidget(delete_button, self.inspo_rows + 1, 6, 1, 2)
 
+        # get new posts button
+        new_posts_botton = QPushButton()
+        new_posts_botton.setText("Get New Posts from Reddit")
+        new_posts_botton.clicked.connect(lambda: get_hot_wdywt(gui=True))
+        self.grid.addWidget(new_posts_botton, self.inspo_rows + 1, 0)
+
     def ui_file_countdown(self):
-        self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse - 1)))
+        self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse) - 1))
         self.grid.addWidget(self.file_countdown, self.inspo_rows, 0)
 
 
@@ -185,6 +193,10 @@ class RedditINSPOParser(QWidget):
     '''
 
     @pyqtSlot()
+    def init_shortcuts(self):
+        write_shortcut = QShortcut(QKeySequence("Return"), self)
+        write_shortcut.activated.connect(self.write_inspo)
+
     def write_inspo(self):
         #try:
         xmp_api.dictonary_write(self.current_photo_path, self.articles_and_names) #write info
@@ -210,7 +222,7 @@ class RedditINSPOParser(QWidget):
                 self.reset()
 
             if file == "":
-                file = QFileDialog.getOpenFileName(self, "Open File", 'reddit_parsing/')[0]
+                file = QFileDialog.getOpenFileName(self, "Open File", '.posts_to_parse/')[0]
 
             self.current_file_path = file
 
@@ -241,14 +253,14 @@ class RedditINSPOParser(QWidget):
 
             #download photo
             r = get(photo_url)
-            self.current_photo_name = info_dict["id"] + extension
+            self.current_photo_name = "r_" + info_dict["id"] + extension
             self.current_photo_path = '.temp/' + info_dict["id"] + extension
 
 
             open(self.current_photo_path, 'wb').write(r.content)
 
             #add info_dict to dict to write to photo
-            self.articles_and_names['id'] = info_dict['id']
+            self.articles_and_names['id'] = "r_" + info_dict['id']
             self.articles_and_names['url'] = info_dict['url']
             self.articles_and_names['author'] = info_dict['author']
 
@@ -280,8 +292,13 @@ class RedditINSPOParser(QWidget):
         for form in self.inspo_article_forms:  # reset forms
             form.line_edit.setText("")
 
+        #reset files to parse list
+        self.files_to_parse = listdir(".posts_to_parse")
+        self.files_to_parse.remove("_scrapped_posts")
+        if len(self.files_to_parse) > 0:
+            self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse) - 1))
+
         self.text_edit.setPlainText("")
-        self.file_countdown.setText("Files left to parse: " + str(len(self.files_to_parse) - 1))
         self.photo_container.setPixmap(QPixmap(self.current_photo_path).scaled(800, 800, Qt.KeepAspectRatio, Qt.FastTransformation))
 
         self.automode()
@@ -289,19 +306,15 @@ class RedditINSPOParser(QWidget):
     def automode(self):
         if len(self.files_to_parse) > 0: #if there are files to parse
             file = self.files_to_parse[0]
-            self.open_file('reddit_parsing/' + file, auto=True) #open file in auto mode
-            self.files_to_parse.remove(file) #remove file form files to parse
+            self.open_file('.posts_to_parse/' + file, auto=True) #open file in auto mode
+            self.files_to_parse.remove(file)
 
+def get_hot_wdywt(gui=False):
+    if gui == True:
+        QMessageBox.about(ex, "New Posts","Scrapping new INSPO posts off of Reddit")
 
-if __name__ == "__main__":
-    # every application must have a QApplication to build on
-    app = QApplication(sys.argv) #QApplication runs with system arguements
-    app.setStyleSheet("QPushButton { margin: 10ex; }")  # can add css-like style sheets to program
-    ex = RedditINSPOParser() #start Reddit INSPO Parser
-    sys.exit(app.exec_())
+    new_posts = 0
 
-
-def get_hot_wdywt():
     #starts instance of reddit using bot
     r = Reddit('INSPONIZER_bot')
 
@@ -325,7 +338,7 @@ def get_hot_wdywt():
 
                 id = post.id
 
-                if id not in open("reddit_parsing/_scrapped_posts").read(): #if post has not already been scraped
+                if id not in open(".posts_to_parse/_scrapped_posts").read(): #if post has not already been scraped
 
                     #removes "more comments"
                     post.comments.replace_more(limit=None)
@@ -361,7 +374,7 @@ def get_hot_wdywt():
                     if len(comments) > 0:
 
                         #add file to _scrapped_posts
-                        f = open("reddit_parsing/_scrapped_posts", "a")
+                        f = open(".posts_to_parse/_scrapped_posts", "a")
                         f.write(id + " ")
                         f.close()
 
@@ -384,3 +397,22 @@ def get_hot_wdywt():
                             f.write(comment)
 
                         f.close()
+
+                        new_posts = new_posts + 1 #increment the number of new posts saved
+
+    if gui == True:
+        QMessageBox.about(ex, "New Posts", str(new_posts) + " new Reddit INSPO posts added")
+
+        #update file countdown
+        # reset files to parse list
+        ex.files_to_parse = listdir(".posts_to_parse")
+        ex.files_to_parse.remove("_scrapped_posts")
+        ex.file_countdown.setText("Files left to parse: " + str(len(ex.files_to_parse) - 1)) #update file countdown
+
+#main process execution
+if __name__ == "__main__":
+    # every application must have a QApplication to build on
+    app = QApplication(sys.argv) #QApplication runs with system arguements
+    app.setStyleSheet("QPushButton { margin: 10ex; }")  # can add css-like style sheets to program
+    ex = RedditINSPOParser() #start Reddit INSPO Parser
+    sys.exit(app.exec_())
