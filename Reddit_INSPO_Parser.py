@@ -382,7 +382,7 @@ def get_hot_wdywt(gui=False):
                         info = {}
                         info['id'] = id
                         info["author"] = "https://www.reddit.com/user/" + author.name
-                        info["url"] = "https://www.reddit.com/" + post.permalink
+                        info["url"] = "https://www.reddit.com" + post.permalink
                         info["photoURL"] = post.url
 
                         #make new file

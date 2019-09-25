@@ -38,6 +38,22 @@ def check_inspo_xmp(file):
         xmpfile.close_file()
         return False
 
+#return inspo xmp from f   ile as dict
+def inspo_xmp_to_dict(file):
+    out = {}
+
+    # get xmp from file
+    xmpfile = XMPFiles(file_path=file, open_forupdate=True)
+    xmp = xmpfile.get_xmp()
+
+    for article in ARTICLES:
+        if xmp.does_property_exist(INSPO_URI, article):
+            out[article] = xmp.get_property(INSPO_URI, article)
+
+    return out
+
+
+
 
 
 
